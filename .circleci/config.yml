@@ -69,6 +69,7 @@ jobs:
     steps:
       - run: mkdir -p workspace
       - run: pwd
+      - run: ls -la
       - run: echo "Hello, world!" > workspace/echo-output
       - persist_to_workspace:
           root: workspace
