@@ -1,4 +1,8 @@
 version: 2
+
+orbs:
+  slack: circleci/slack@4.1
+
 jobs:
   one:
     docker:
@@ -37,10 +41,14 @@ workflows:
   one_and_two:
     jobs:
       - one
+      - slack/on-hold:
+          context: slack-secrets
+          requires:
+            - one
       - hold:
           type: approval
           requires:
-            - one
+            - slack/on-hold
       - two:
           requires:
             - hold
