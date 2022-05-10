@@ -83,7 +83,7 @@ jobs:
           if [[`cat /tmp/workspace/echo-output` == "Hello, world!"]]; then
             echo "It worked!";
           else
-            echo "Nope!"; exit1
+            echo "Nope!"; exit 1
           fi
 
 workflows:
