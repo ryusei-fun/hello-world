@@ -1,53 +1,95 @@
+# version: 2.1
+
+# orbs:
+#   slack: circleci/slack@4.1
+
+# jobs:
+#   one:
+#     docker:
+#       - image: cimg/ruby:3.0.2
+#         auth:
+#           username: mydockerhub-user
+#           password: $DOCKERHUB_PASSWORD
+#     steps:
+#       - checkout
+#       - run: echo "A first Hello !"
+#       - run: mkdir -p my_workspace
+#       - run: echo "Trying out workspaces" > my_workspace/echo-output
+#       - persist_to_workspace:
+#           root: my_workspace
+#           paths:
+#             - echo-output
+#   two:
+#     docker:
+#       - image: cimg/ruby:3.0.2
+#         auth:
+#           username: mydockerhub-user
+#           password: $DOCKERHUB_PASSWORD
+#     steps:
+#       - checkout
+#       - run: echo "A more familiar hi"
+#       - attach_workspace:
+#           at: my_workspace
+#       - run: |
+#           if [[ $(cat my_workspace/echo-output) == "Trying out workspaces" ]]; then
+#             echo "It worked!";
+#           else
+#             echo "Nope!"; exit 1
+#           fi
+# workflows:
+#   one_and_two:
+#     jobs:
+#       - one
+#       - slack/on-hold:
+#           context: slack-secrets
+#           requires:
+#             - one
+#       - hold:
+#           type: approval
+#           requires:
+#             - slack/on-hold
+#       - two:
+#           requires:
+#             - hold
+
 version: 2.1
 
-orbs:
-  slack: circleci/slack@4.1
+executors:
+  my-executor:
+    docker:
+      - image: buildpack-deps:jessie
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD
+    working_directory: /tmp
 
 jobs:
-  one:
-    docker:
-      - image: cimg/ruby:3.0.2
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD
+  flow:
+    executor: my-executor
     steps:
-      - checkout
-      - run: echo "A first Hello !"
-      - run: mkdir -p my_workspace
-      - run: echo "Trying out workspaces" > my_workspace/echo-output
+      - run: mkdir -p workspace
+      - run: pwd
+      - run: echo "Hello, world!" > workspace/echo-output
       - persist_to_workspace:
-          root: my_workspace
+          root: workspace
           paths:
             - echo-output
-  two:
-    docker:
-      - image: cimg/ruby:3.0.2
-        auth:
-          username: mydockerhub-user
-          password: $DOCKERHUB_PASSWORD
+  downstream:
+    executor: my-executor
     steps:
-      - checkout
-      - run: echo "A more familiar hi"
       - attach_workspace:
-          at: my_workspace
+          at: /tmp/workspace
       - run: |
-          if [[ $(cat my_workspace/echo-output) == "Trying out workspaces" ]]; then
+          if [[`cat /tmp/workspace/echo-output` == "Hello, world!"]]; then
             echo "It worked!";
           else
-            echo "Nope!"; exit 1
+            echo "Nope!"; exit1
           fi
+
 workflows:
-  one_and_two:
+  btd:
     jobs:
-      - one
-      - slack/on-hold:
-          context: slack-secrets
+      - flow
+      - downstream:
           requires:
-            - one
-      - hold:
-          type: approval
-          requires:
-            - slack/on-hold
-      - two:
-          requires:
-            - hold
+            - flow
